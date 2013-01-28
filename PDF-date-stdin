@@ -14,7 +14,7 @@ my $year = 52*7*24*3600;
 my @monthy = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
 # Range of dates that are deemed allowable ($past > date > $future)
 #my $future = $year;
-my $future = 0;
+my $future = 30*24*3600;
 my $past = 30*$year;
 
 # initial part of document to check first
@@ -116,8 +116,8 @@ sub process {
 	    $dt->epoch < $now - $past) {
 		return "no date";
 	# don't allow 'today'
-	} elsif ($today->ymd eq $dt->ymd) {
-		return "no date";
+	#} elsif ($today->ymd eq $dt->ymd) {
+	#	return "no date";
 	}
 		
 	# date is good!
