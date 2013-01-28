@@ -11,7 +11,7 @@ my $parser = Date::Extract->new();
 my $now = time();
 my $today = DateTime->now();
 my $year = 52*7*24*3600;
-
+my @monthy = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
 # Range of dates that are deemed allowable ($past > date > $future)
 #my $future = $year;
 my $future = 0;
@@ -35,11 +35,16 @@ close LOG;
 # re-form parsed dates in Date::Extract friendly format including y2k fix
 sub dform {
 	my ($d, $m, $y) = @_;
+	
+	print LOG "$y/$m/$d: ";
+
 	if (!$d) {
 		$d = 1;
 	}
+	if ($m =~ m/\d+/) {
+		$m = $monthy[$m-1];
+	}
 
-	print LOG "$y/$m/$d: ";
 
 	# ensure 4-digit year
 	if ($y < 20) {
@@ -75,12 +80,13 @@ sub process {
 	# - double digit
 	# - suffixed (eg 1st, 15th, 22nd)
 	# - missing
-	$day = '\d{1,2}';
+	$day = '0?[1-9]|[12][0-9]|3[01]';
 	$suffix = 'st|nd|rd|th';
 	# month can be full or short name
 	$shortmonth = 'jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec';
+	$shortmonth .= '|0?[1-9]|1[012]';
 	# year can be 2 or 4 digits
-	$yr = '\d{4}|\d{2}';
+	$yr = '(19|20)\d{2}?';
 	$text =~ s/($day)?($suffix)?($sep)?($shortmonth)\w*($sep)?($yr)/dform($1, $4, $6)/eig;
 
 	# lose now/today/tomorrow
