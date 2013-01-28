@@ -55,15 +55,13 @@ sub dform {
 
 	
 sub process {
-	my $line;
+	my ($dt, $textlen, $line);
 	my $text = "";
-	# FIXME: needed?
+
 	while ($line = <STDIN>) {
 		$text .= $line;
 	}
-
-	#my $text = <STDIN> || return "no text";
-	my ($dt, $textlen);
+	return "no text" unless ($text);
 
 	print LOG $text;
 
@@ -74,6 +72,7 @@ sub process {
 	# - single digit with or without leading zero
 	# - double digit
 	# - qualified (eg 1st, 15th, 22nd)
+	# - missing
 	# month can be full or short name
 	# year can be 2 or 4 digits
 	$text =~ s/(\d{1,2})?(st|nd|rd|th)?(-|\/|\.|\s+)?(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*(-|\/|\.|\s+)?(\d{4}|\d{2})/dform($1, $4, $6)/eig;
@@ -83,7 +82,6 @@ sub process {
 
 	# lose days of week
 	$text =~ s/(mon|tues?|wed(nes)?|thu(rs)?|fri|sat(ur)?|sun)(day)?//ig;
-
 
 	# look for first "date*" string
 	if (substr($text, 0, $initial_size) =~ /date:?\s+(.*)/is) {
