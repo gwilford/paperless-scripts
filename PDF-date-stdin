@@ -1,0 +1,127 @@
+#!/usr/bin/perl -w
+
+# Take text on STDIN and a source filename as 1st argument
+# - search for appropriate date string in text
+# - set the source file modification time to date (if found)
+# - print out date string for use as name of file/record
+
+use Date::Extract;
+
+my $parser = Date::Extract->new();
+my $now = time();
+my $today = DateTime->now();
+my $year = 52*7*24*3600;
+
+# Range of dates that are deemed allowable ($past > date > $future)
+#my $future = $year;
+my $future = 0;
+my $past = 30*$year;
+
+# initial part of document to check first
+my $initial_size = 500;
+
+my $filename = $ARGV[0] || die "no filename supplied";
+
+#print "Hello, world\n";
+
+open (LOG, ">>/Users/gwilford/dateparse.log") or die "cannot log";
+print LOG "$filename\n";
+
+# Process the text
+print process() . "\n";
+
+print LOG "\n";
+close LOG;
+
+# re-form parsed dates in Date::Extract friendly format including y2k fix
+sub dform {
+	my ($d, $m, $y) = @_;
+	if (!$d) {
+		$d = 1;
+	}
+
+	print LOG "$y/$m/$d: ";
+
+	# ensure 4-digit year
+	if ($y < 20) {
+		$y += 2000;
+	} elsif ($y < 1900) {
+		$y += 1900;
+	}
+
+	# for Date::Extract 
+	my $s = sprintf(" %s %d, %4d", $m, $d, $y);
+	print LOG $s . "\n";
+	return ($s);
+}
+
+	
+sub process {
+	my $line;
+	my $text = "";
+	# FIXME: needed?
+	while ($line = <STDIN>) {
+		$text .= $line;
+	}
+
+	#my $text = <STDIN> || return "no text";
+	my ($dt, $textlen);
+
+	print LOG $text;
+
+	# Pre-process various Date::Extract unfriendly date formats
+	#
+	# separators can be '-|/|.' or whitespace 
+	# day can be:
+	# - single digit with or without leading zero
+	# - double digit
+	# - qualified (eg 1st, 15th, 22nd)
+	# month can be full or short name
+	# year can be 2 or 4 digits
+	#print $text;
+	#$text =~ s/(\d{1,2})(st|nd|rd|th)?(-|\/|\.|\s+)?(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*(-|\/|\.|\s+)?(\d{4}|\d{2})/dform($1, $4, $6)/eig;
+	$text =~ s/(\d{1,2})?(st|nd|rd|th)?(-|\/|\.|\s+)?(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*(-|\/|\.|\s+)?(\d{4}|\d{2})/dform($1, $4, $6)/eig;
+	print LOG $text;
+	#$text =~ s/(24)( )(April)( )(2010)/dform($1, $3, $5)/ig;
+	# without leading day-of-month?
+	# FIXME: buggers up the above...
+	# FIXED.
+	# what about 1/4/2005
+	#$text =~ s/(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*(-|\/|\.|\s+)?(\d{4}|\d{2})/dform(1, $1, $3)/eig;
+
+	# lose now/today/tomorrow
+	$text =~ s/now|today|tomorrow//ig;
+
+	# lose days of week
+	$text =~ s/(mon|tues?|wed(nes)?|thu(rs)?|fri|sat(ur)?|sun)(day)?//ig;
+
+
+	# look for first "date*" string
+	if (substr($text, 0, $initial_size) =~ /date:?\s+(.*)/is) {
+		$dt = $parser->extract(substr($1, 0, 50));
+	}
+
+	# check initial part of document text
+	if (!$dt) {
+		$dt = $parser->extract(substr($text, 0, $initial_size));
+	}
+
+	# check remaining parts of document
+	if (!$dt && length($text) > $initial_size) {
+		$dt = $parser->extract(substr($text, 470));	
+	}
+	return "no date" unless $dt;
+
+	# sanity-check the date found
+	if ($dt->epoch > $now + $future ||
+	    $dt->epoch < $now - $past) {
+		return "no date";
+	# don't allow 'today'
+	} elsif ($today->ymd eq $dt->ymd) {
+		return "no date";
+	}
+		
+	# date is good!
+	utime($dt->epoch, $dt->epoch, $filename);
+	return $dt->ymd;
+}
