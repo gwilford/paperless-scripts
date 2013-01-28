@@ -22,8 +22,6 @@ my $initial_size = 500;
 
 my $filename = $ARGV[0] || die "no filename supplied";
 
-#print "Hello, world\n";
-
 open (LOG, ">>/Users/gwilford/dateparse.log") or die "cannot log";
 print LOG "$filename\n";
 
@@ -78,16 +76,7 @@ sub process {
 	# - qualified (eg 1st, 15th, 22nd)
 	# month can be full or short name
 	# year can be 2 or 4 digits
-	#print $text;
-	#$text =~ s/(\d{1,2})(st|nd|rd|th)?(-|\/|\.|\s+)?(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*(-|\/|\.|\s+)?(\d{4}|\d{2})/dform($1, $4, $6)/eig;
 	$text =~ s/(\d{1,2})?(st|nd|rd|th)?(-|\/|\.|\s+)?(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*(-|\/|\.|\s+)?(\d{4}|\d{2})/dform($1, $4, $6)/eig;
-	print LOG $text;
-	#$text =~ s/(24)( )(April)( )(2010)/dform($1, $3, $5)/ig;
-	# without leading day-of-month?
-	# FIXME: buggers up the above...
-	# FIXED.
-	# what about 1/4/2005
-	#$text =~ s/(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*(-|\/|\.|\s+)?(\d{4}|\d{2})/dform(1, $1, $3)/eig;
 
 	# lose now/today/tomorrow
 	$text =~ s/now|today|tomorrow//ig;
