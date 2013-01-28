@@ -107,7 +107,7 @@ sub process {
 
 	# check remaining parts of document
 	if (!$dt && length($text) > $initial_size) {
-		$dt = $parser->extract(substr($text, 470));	
+		$dt = $parser->extract(substr($text, $initial_size-30));	
 	}
 	return "no date" unless $dt;
 
