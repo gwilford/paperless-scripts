@@ -22,6 +22,7 @@ my $initial_size = 500;
 
 my $filename = $ARGV[0] || die "no filename supplied";
 
+# debgugging
 open (LOG, ">>/Users/gwilford/dateparse.log") or die "cannot log";
 print LOG "$filename\n";
 
@@ -68,14 +69,19 @@ sub process {
 	# Pre-process various Date::Extract unfriendly date formats
 	#
 	# separators can be '-|/|.' or whitespace 
+	$sep = '-|\/|\.|\s+';
 	# day can be:
 	# - single digit with or without leading zero
 	# - double digit
-	# - qualified (eg 1st, 15th, 22nd)
+	# - suffixed (eg 1st, 15th, 22nd)
 	# - missing
+	$day = '\d{1,2}';
+	$suffix = 'st|nd|rd|th';
 	# month can be full or short name
+	$shortmonth = 'jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec';
 	# year can be 2 or 4 digits
-	$text =~ s/(\d{1,2})?(st|nd|rd|th)?(-|\/|\.|\s+)?(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*(-|\/|\.|\s+)?(\d{4}|\d{2})/dform($1, $4, $6)/eig;
+	$yr = '\d{4}|\d{2}';
+	$text =~ s/($day)?($suffix)?($sep)?($shortmonth)\w*($sep)?($yr)/dform($1, $4, $6)/eig;
 
 	# lose now/today/tomorrow
 	$text =~ s/now|today|tomorrow//ig;
