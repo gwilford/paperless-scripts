@@ -1,9 +1,9 @@
 -- Set object name and creation date from document text
 -- Created by Graeme Wilford 8/9/2012
--- Copyright (c) 2012. All rights reserved.
+-- Copyright (c) 2012, 2013. All rights reserved.
 
 -- the perl script (takes document text on STDIN and source file path as 1st argument)
-set PDFdate to "/Users/gwilford/bin/PDF-date4-stdin"
+set PDFdate to "/Users/gwilford/paperless-scripts/PDF-date-stdin"
 set MaxTextSize to 20000
 
 tell application id "com.devon-technologies.thinkpro2"
