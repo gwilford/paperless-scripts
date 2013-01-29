@@ -5,13 +5,14 @@
 # - set the source file modification time to date (if found)
 # - print out date string for use as name of file/record
 
-use Date::Extract;
+use Time::Local;
+use POSIX qw(strftime);
 
-my $parser = Date::Extract->new();
 my $now = time();
-my $today = DateTime->now();
 my $year = 52*7*24*3600;
 my @monthy = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
+my %monthy = ( jan => 0, feb => 1, mar => 2, apr => 3, may => 4, jun => 5, jul => 6, 
+	       aug => 7, sep => 8, oct => 9, nov => 10, dec => 11);
 my @dates;
 
 # Range of dates that are deemed allowable ($past > date > $future)
@@ -45,7 +46,9 @@ sub dform {
 	}
 	# lookup short month name if digit passed
 	if ($m =~ m/\d+/) {
-		$m = $monthy[$m-1];
+		$m--;
+	} else {
+		$m = $monthy{lc($m)};
 	}
 
 	# ensure 4-digit year
@@ -56,9 +59,9 @@ sub dform {
 	}
 
 	# for Date::Extract 
-	my $s = sprintf(" %s %d, %4d", $m, $d, $y);
+	my $s = sprintf(" %d %d, %4d", $m, $d, $y);
 	print LOG $s . "\n";
-	push @dates, localtime(0, 0, 0, $d, $m, $y);
+	push @dates, timelocal(0, 0, 0, $d, $m, $y);
 	return ('');
 }
 
@@ -92,38 +95,14 @@ sub process {
 	$yr = '(19|20)\d{2}?';
 	$text =~ s/($day)?($suffix)?($sep)?($month)\w*($sep)?($yr)/dform($1, $4, $6)/eig;
 
-	# lose now/today/tomorrow
-	$text =~ s/now|today|tomorrow//ig;
-
-	# lose days of week
-	$text =~ s/(mon|tues?|wed(nes)?|thu(rs)?|fri|sat(ur)?|sun)(day)?//ig;
-
-	# look for first "date*" string
-	if (substr($text, 0, $initial_size) =~ /date:?\s+(.*)/is) {
-		$dt = $parser->extract(substr($1, 0, 50));
+	while (my $epoch = shift @dates) {
+		print LOG "$epoch\n";
+		next if ($epoch > $now + $future || 
+			 $epoch < $now - $past);
+		# date is good!
+		utime($epoch, $epoch, $filename);
+		return strftime("%Y-%m-%d", localtime($epoch));
 	}
-
-	# check initial part of document text
-	if (!$dt) {
-		$dt = $parser->extract(substr($text, 0, $initial_size));
-	}
-
-	# check remaining parts of document
-	if (!$dt && length($text) > $initial_size) {
-		$dt = $parser->extract(substr($text, $initial_size-30));	
-	}
-	return "no date" unless $dt;
-
-	# sanity-check the date found
-	if ($dt->epoch > $now + $future ||
-	    $dt->epoch < $now - $past) {
-		return "no date";
-	# don't allow 'today'
-	#} elsif ($today->ymd eq $dt->ymd) {
-	#	return "no date";
-	}
+	return "no date";
 		
-	# date is good!
-	utime($dt->epoch, $dt->epoch, $filename);
-	return $dt->ymd;
 }
