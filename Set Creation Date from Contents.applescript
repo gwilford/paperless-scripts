@@ -13,7 +13,6 @@ tell application id "com.devon-technologies.thinkpro2"
 		
 		set number_of_steps to count of this_selection
 		show progress indicator "Parsing documents…" steps number_of_steps
-		--show progress indicator "Parsing records…"
 		
 		repeat with this_record in this_selection
 			-- fake a 'continue' with an exit repeat of a 1-pass loop
