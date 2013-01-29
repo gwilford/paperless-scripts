@@ -12,6 +12,7 @@ my $now = time();
 my $today = DateTime->now();
 my $year = 52*7*24*3600;
 my @monthy = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
+my @dates;
 
 # Range of dates that are deemed allowable ($past > date > $future)
 #my $future = $year;
@@ -57,7 +58,8 @@ sub dform {
 	# for Date::Extract 
 	my $s = sprintf(" %s %d, %4d", $m, $d, $y);
 	print LOG $s . "\n";
-	return ($s);
+	push @dates, localtime(0, 0, 0, $d, $m, $y);
+	return ('');
 }
 
 	
