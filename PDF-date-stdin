@@ -89,6 +89,8 @@ sub process {
 	$month .= '|1[012]|0?[1-9]';
 	# year can be 2 or 4 digits
 	$yr = '(19|20)\d{2}?';
+
+	# returns number of subs or '' if none
 	$text =~ s/($day)?($suffix)?($sep)?($month)\w*($sep)?($yr)/dform($1, $4, $6)/eig;
 
 	while (my $epoch = shift @dates) {
