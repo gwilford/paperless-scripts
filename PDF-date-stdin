@@ -31,16 +31,16 @@ close LOG;
 
 # parse dates and return seconds since epoch
 sub dform {
-	my ($d, $m, $y) = @_;
+	my ($d, $mstr, $mdig, $y) = @_;
 
 	# set to 1st of month if no day in date
 	$d = 1 unless ($d);
 
 	# convert month number or short-name to timelocal $mon
-	if ($m =~ m/\d+/) {
-		$m--;
+	if ($mdig) {
+		$m = $mdig-1;
 	} else {
-		$m = $monthy{lc($m)};
+		$m = $monthy{lc(substr($mstr, 0, 3))};
 	}
 
 	# ensure 4-digit year
@@ -60,22 +60,22 @@ sub process {
 		print LOG $text;
 	
 		# separators can be '-|/|.' or whitespace 
-		$sep = '-|\/|\.|\s+';
+		my $sep = '-|\/|\.|\s+';
 		# day can be:
 		# - single digit with or without leading zero
 		# - double digit
 		# - suffixed (eg 1st, 15th, 22nd)
 		# - missing
-		$day = '0?[1-9]|[12][0-9]|3[01]';
-		$suffix = 'st|nd|rd|th';
+		my $day = '0?[1-9]|[12][0-9]|3[01]';
+		my $suffix = 'st|nd|rd|th';
 		# month can be full or short name
-		$month = 'jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec';
-		$month .= '|1[012]|0?[1-9]';
+		my $mstr = 'jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec';
+		my $mdig = '1[012]|0?[1-9]';
 		# year can be 2 or 4 digits
-		$yr = '(19|20)\d{2}?';
+		my $yr = '(19|20)?\d{2}?';
 	
-		while ($text =~ /(($day)($suffix)?($sep))?($month)\w*($sep)($yr)/ig) {
-			my $epoch = dform($2, $5, $7);
+		while ($text =~ /(($day)($suffix)?($sep))?(($mstr)[a-z]*|\b($mdig))($sep)($yr)/ig) {
+			my $epoch = dform($2, $6, $7, $9);
 			print LOG "\n** " . localtime($epoch) . " **\n";
 			next if ($epoch > $now + $future || 
 				 $epoch < $now - $past);
