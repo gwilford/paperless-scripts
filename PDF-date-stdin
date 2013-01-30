@@ -81,7 +81,13 @@ sub process {
 				 $epoch < $now - $past);
 			# date is good!
 			utime($epoch, $epoch, $filename);
-			return strftime("%Y-%m-%d", localtime($epoch));
+			if ($1) {
+				$name = strftime("%Y-%m-%d", localtime($epoch));
+			} else {
+				$name = strftime("%Y-%m", localtime($epoch));
+			}
+			print LOG "$name\n";
+			return $name;
 		}
 		#return "no date";
 	}		
