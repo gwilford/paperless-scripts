@@ -55,40 +55,35 @@ sub dform {
 
 # parse text, change file timestamp and return date for filename
 sub process {
-	my $text = "";
-
-	while (my $line = <STDIN>) {
-		$text .= $line;
-	}
-	# Should never happen as this case is caught by the applescript
-	return "no text" unless ($text);
-
-	print LOG $text;
-
-	# separators can be '-|/|.' or whitespace 
-	$sep = '-|\/|\.|\s+';
-	# day can be:
-	# - single digit with or without leading zero
-	# - double digit
-	# - suffixed (eg 1st, 15th, 22nd)
-	# - missing
-	$day = '0?[1-9]|[12][0-9]|3[01]';
-	$suffix = 'st|nd|rd|th';
-	# month can be full or short name
-	$month = 'jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec';
-	$month .= '|1[012]|0?[1-9]';
-	# year can be 2 or 4 digits
-	$yr = '(19|20)\d{2}?';
-
-	while ($text =~ /($day)?($suffix)?($sep)?($month)\w*($sep)?($yr)/ig) {
-		my $epoch = dform($1, $4, $6);
-		print LOG localtime($epoch) . "\n";
-		next if ($epoch > $now + $future || 
-			 $epoch < $now - $past);
-		# date is good!
-		utime($epoch, $epoch, $filename);
-		return strftime("%Y-%m-%d", localtime($epoch));
-	}
+	local $/ = "\r";
+	while (my $text = <STDIN>) {
+		print LOG $text;
+	
+		# separators can be '-|/|.' or whitespace 
+		$sep = '-|\/|\.|\s+';
+		# day can be:
+		# - single digit with or without leading zero
+		# - double digit
+		# - suffixed (eg 1st, 15th, 22nd)
+		# - missing
+		$day = '0?[1-9]|[12][0-9]|3[01]';
+		$suffix = 'st|nd|rd|th';
+		# month can be full or short name
+		$month = 'jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec';
+		$month .= '|1[012]|0?[1-9]';
+		# year can be 2 or 4 digits
+		$yr = '(19|20)\d{2}?';
+	
+		while ($text =~ /(($day)($suffix)?($sep))?($month)\w*($sep)($yr)/ig) {
+			my $epoch = dform($2, $5, $7);
+			print LOG "\n** " . localtime($epoch) . " **\n";
+			next if ($epoch > $now + $future || 
+				 $epoch < $now - $past);
+			# date is good!
+			utime($epoch, $epoch, $filename);
+			return strftime("%Y-%m-%d", localtime($epoch));
+		}
+		#return "no date";
+	}		
 	return "no date";
-		
 }
