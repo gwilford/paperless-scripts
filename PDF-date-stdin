@@ -74,7 +74,8 @@ sub process {
 		# year can be 2 or 4 digits
 		my $yr = '(19|20)?\d{2}?';
 	
-		while ($text =~ /(($day)($suffix)?($sep))?(($mstr)[a-z]*|\b($mdig))($sep)($yr)(?![%\d])/ig) {
+		# FIXME: February 27, 2000
+		while ($text =~ /(($day)($suffix)?($sep))?(($mstr)[a-z]*,?|\b($mdig))($sep)($yr)(?![%\d])/ig) {
 			my $epoch = dform($2, $6, $7, $9);
 			print LOG "\n** " . localtime($epoch) . " **\n";
 			next if ($epoch > $now + $future || 
