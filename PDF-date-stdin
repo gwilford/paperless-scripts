@@ -7,6 +7,8 @@
 
 use Time::Local;
 use POSIX qw(strftime);
+use strict;
+use Getopt::Std;
 
 my $now = time();
 my %monthy = ( jan => 0, feb => 1, mar => 2, apr => 3, may => 4, jun => 5, jul => 6, 
@@ -17,11 +19,22 @@ my $year = 52*7*24*3600;
 my $future = 30*24*3600;
 my $past = 30*$year;
 
-my $filename = $ARGV[0] || die "no filename supplied";
+sub usage {
+	die "Usage: $0 [ -t ] [ -c ] [ -L logfile ] [ filename ]\n" .
+	    "       -t: test mode - continue after first match\n" .
+	    "       -c: CR instead of LF\n";
+}
+
+our($opt_t, $opt_L, $opt_c);
+getopts('tcL:') || usage();
+
+my $test = $opt_t;
+my $logfile = $opt_L ? $opt_L : '/dev/null';
+my $filename = $ARGV[0];
 
 # debgugging
-open (LOG, ">>/Users/gwilford/dateparse.log") or die "cannot log";
-print LOG "$filename\n";
+open (LOG, ">>$logfile") or die "cannot log";
+print LOG "$filename\n" if ($filename);
 
 # Process the text
 print process() . "\n";
@@ -32,6 +45,7 @@ close LOG;
 # parse dates and return seconds since epoch
 sub dform {
 	my ($d, $mstr, $mdig, $y) = @_;
+	my $m;
 
 	# set to 1st of month if no day in date
 	$d = 1 unless ($d);
@@ -56,7 +70,7 @@ sub dform {
 # parse text, change file timestamp and return date for filename
 sub process {
 	# content passed by DEVONthink/applescript has CR line-endings instead of LF
-	local $/ = "\r";
+	local $/ = "\r" if ($opt_c);
 	while (my $text = <STDIN>) {
 		print LOG $text;
 	
@@ -79,29 +93,30 @@ sub process {
 	
 		# FIXME: February 27, 2000
 		# FIXME: need to handle $mstr and $mdig differently
-		#while ($text =~ /(($day)($suffix)?($sep))?(($mstr)[a-z]*,?|\b($mdig))($sep)($yr)(?![%\d])/ig) {
-		while ($text =~ /(($day)($suffix)?($sep))?(($mstr)[a-z]*,?)()($sep)($yr)/ig ||
-		       $text =~ /(($day)($suffix)?($sep))()()($mdig)(\4)($yr)/ig ) {
+		while ($text =~ /(($day)($suffix)?($sep))?(($mstr)[a-z]*,?|\b($mdig))($sep)($yr)(?![%\d])/ig) {
+		#while ($text =~ /(($day)($suffix)?($sep))?(($mstr)[a-z]*,?)()($sep)($yr)/ig ||
+		#       $text =~ /(($day)($suffix)?($sep))()()($mdig)(\4)($yr)/ig ) {
 			# catch any specific false positives
-			#next if ($& =~ /^\d+\.\d+$/);
+			next if ($& =~ /^\d+\.\d+$/);
 
 			my $epoch = dform($2, $6, $7, $9);
-			print LOG "\n** $& = " . localtime($epoch) . " **\n";
+			print LOG "\n** $& = " . localtime($epoch) . "\n";
 
 			# catch dates outside of acceptable range
 			next if ($epoch > $now + $future || 
 				 $epoch < $now - $past);
 
 			# set file timestamp
-			utime($epoch, $epoch, $filename);
+			utime($epoch, $epoch, $filename) if ($filename);
+			my $name;
 			if ($1) {
 				$name = strftime("%Y-%m-%d", localtime($epoch));
 			} else {
 				# no day number
 				$name = strftime("%Y-%m", localtime($epoch));
 			}
-			print LOG "title = $name\n";
-			return $name;
+			print LOG "** title = $name\n";
+			return $name unless ($test);
 		}
 		#return "no date";
 	}		
