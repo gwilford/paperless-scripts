@@ -55,11 +55,14 @@ sub dform {
 
 # parse text, change file timestamp and return date for filename
 sub process {
+	# content passed by DEVONthink/applescript has CR line-endings instead of LF
 	local $/ = "\r";
 	while (my $text = <STDIN>) {
 		print LOG $text;
 	
 		# separators can be '-|/|.' or whitespace 
+		# FIXME: separators should be consistent using backrefs but need to handle
+		#        single or multi-whitespace
 		my $sep = '-|\/|\.|\s+';
 		# day can be:
 		# - single digit with or without leading zero
@@ -75,22 +78,27 @@ sub process {
 		my $yr = '(19|20)?\d{2}?';
 	
 		# FIXME: February 27, 2000
+		# FIXME: need to handle $mstr and $mdig differently
 		while ($text =~ /(($day)($suffix)?($sep))?(($mstr)[a-z]*,?|\b($mdig))($sep)($yr)(?![%\d])/ig) {
 			# catch any specific false positives
 			next if ($& =~ /^\d+\.\d+$/);
 
 			my $epoch = dform($2, $6, $7, $9);
-			print LOG "\n** " . localtime($epoch) . " **\n";
+			print LOG "\n** $& = " . localtime($epoch) . " **\n";
+
+			# catch dates outside of acceptable range
 			next if ($epoch > $now + $future || 
 				 $epoch < $now - $past);
-			# date is good!
+
+			# set file timestamp
 			utime($epoch, $epoch, $filename);
 			if ($1) {
 				$name = strftime("%Y-%m-%d", localtime($epoch));
 			} else {
+				# no day number
 				$name = strftime("%Y-%m", localtime($epoch));
 			}
-			print LOG "$name\n";
+			print LOG "title = $name\n";
 			return $name;
 		}
 		#return "no date";
