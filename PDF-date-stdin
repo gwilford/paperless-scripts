@@ -76,6 +76,9 @@ sub process {
 	
 		# FIXME: February 27, 2000
 		while ($text =~ /(($day)($suffix)?($sep))?(($mstr)[a-z]*,?|\b($mdig))($sep)($yr)(?![%\d])/ig) {
+			# catch any specific false positives
+			next if ($& =~ /^\d+\.\d+$/);
+
 			my $epoch = dform($2, $6, $7, $9);
 			print LOG "\n** " . localtime($epoch) . " **\n";
 			next if ($epoch > $now + $future || 
