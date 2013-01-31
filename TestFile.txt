@@ -1,0 +1,7 @@
+17/10/90
+ 01.02.1990
+	23-5-10
+xxyy 1st Aug 2000
+2 February 88 aabb
+May 2012 123 #Just the month
+June 24, 2003 #Not handled
