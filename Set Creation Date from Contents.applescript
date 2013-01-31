@@ -4,6 +4,7 @@
 
 -- the perl script (takes document text on STDIN and source file path as 1st argument)
 set PDFdate to "/Users/gwilford/paperless-scripts/PDF-date-stdin"
+set PDFdate_args to " -c -L /Users/gwilford/PDF-date-stdin.out "
 set MaxTextSize to 20000
 
 tell application id "com.devon-technologies.thinkpro2"
@@ -13,7 +14,6 @@ tell application id "com.devon-technologies.thinkpro2"
 		
 		set number_of_steps to count of this_selection
 		show progress indicator "Parsing documents…" steps number_of_steps
-		--show progress indicator "Parsing records…"
 		
 		repeat with this_record in this_selection
 			-- fake a 'continue' with an exit repeat of a 1-pass loop
@@ -35,7 +35,7 @@ tell application id "com.devon-technologies.thinkpro2"
 				
 				-- do the heavy lifting
 				-- NB. shell can only handle ~260k command line	
-				set theName to do shell script "echo " & quoted form of theTrimmedText & " | " & PDFdate & space & quoted form of thePath
+				set theName to do shell script "echo " & quoted form of theTrimmedText & " | " & PDFdate & PDFdate_args & quoted form of thePath
 				
 				-- get the file timestamp
 				tell application "System Events"
