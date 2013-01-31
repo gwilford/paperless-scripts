@@ -74,14 +74,16 @@ sub process {
 		# month can be full or short name
 		my $mstr = 'jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec';
 		my $mdig = '1[012]|0?[1-9]';
-		# year can be 2 or 4 digits
-		my $yr = '(19|20)?\d{2}?';
+		# year can be 2 or 4 digits but must not be followed by a % or other digit
+		my $yr = '(19|20)?\d{2}?(?![%\d])';
 	
 		# FIXME: February 27, 2000
 		# FIXME: need to handle $mstr and $mdig differently
-		while ($text =~ /(($day)($suffix)?($sep))?(($mstr)[a-z]*,?|\b($mdig))($sep)($yr)(?![%\d])/ig) {
+		#while ($text =~ /(($day)($suffix)?($sep))?(($mstr)[a-z]*,?|\b($mdig))($sep)($yr)(?![%\d])/ig) {
+		while ($text =~ /(($day)($suffix)?($sep))?(($mstr)[a-z]*,?)()($sep)($yr)/ig ||
+		       $text =~ /(($day)($suffix)?($sep))()()($mdig)(\4)($yr)/ig ) {
 			# catch any specific false positives
-			next if ($& =~ /^\d+\.\d+$/);
+			#next if ($& =~ /^\d+\.\d+$/);
 
 			my $epoch = dform($2, $6, $7, $9);
 			print LOG "\n** $& = " . localtime($epoch) . " **\n";
