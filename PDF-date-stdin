@@ -93,9 +93,8 @@ sub process {
 	
 		# FIXME: February 27, 2000
 		# FIXME: need to handle $mstr and $mdig differently
-		while ($text =~ /(($day)($suffix)?($sep))?(($mstr)[a-z]*,?|\b($mdig))($sep)($yr)(?![%\d])/ig) {
-		#while ($text =~ /(($day)($suffix)?($sep))?(($mstr)[a-z]*,?)()($sep)($yr)/ig ||
-		#       $text =~ /(($day)($suffix)?($sep))()()($mdig)(\4)($yr)/ig ) {
+		# NB. extended patterns don't 'match' or count as $<num>
+		while ($text =~ /((?<!\d)($day)($suffix)?($sep))?(($mstr)[a-z]*,?|\b($mdig))($sep)($yr)(?![%\d])/ig) {
 			# catch any specific false positives
 			next if ($& =~ /^\d+\.\d+$/);
 
