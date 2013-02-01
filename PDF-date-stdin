@@ -73,7 +73,6 @@ sub process {
 	local $/ = "\r" if ($opt_c);
 	while (my $text = <STDIN>) {
 		print LOG $text;
-	
 		# separators can be '-|/|.' or whitespace 
 		# FIXME: separators should be consistent using backrefs but need to handle
 		#        single or multi-whitespace
@@ -87,13 +86,16 @@ sub process {
 		my $suffix = 'st|nd|rd|th';
 		# month can be full or short name
 		my $mstr = 'jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may' .
-			   '|june?|july?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?';
+			   '|june?|july?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?' .
+			   '|nov(?:ember)?|dec(?:ember)?';
 		my $mdig = '1[012]|0?[1-9]';
-		# year can be 2 or 4 digits but must not be followed by a % or other digit
+		# year can be 2 or 4 digits but must not be followed by a % or digit
 		my $yr = '(19|20)?\d{2}?(?![%\d])';
 	
 		# NB. extended patterns don't count as $<num>
-		my $pattern = "(?:(?<!\d)($day)(?:$suffix)?(?:$sep))?(?:($mstr)|\b($mdig))(?:$sep)($yr)(?![%\d])";
+		# day cannot be prefixed by more digits
+		my $pattern = "(?:(?<!\d)($day)(?:$suffix)?(?:$sep))?" .
+			      "(?:($mstr)|\b($mdig))(?:$sep)($yr)(?![%\d])";
 
 		# FIXME: February 27, 2000
 		# FIXME: need to handle $mstr and $mdig differently
@@ -120,7 +122,6 @@ sub process {
 			print LOG "** title = $name\n";
 			return $name unless ($test);
 		}
-		#return "no date";
 	}		
 	return "no date";
 }
