@@ -86,19 +86,22 @@ sub process {
 		my $day = '0?[1-9]|[12][0-9]|3[01]';
 		my $suffix = 'st|nd|rd|th';
 		# month can be full or short name
-		my $mstr = 'jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec';
+		my $mstr = 'jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may' .
+			   '|june?|july?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?';
 		my $mdig = '1[012]|0?[1-9]';
 		# year can be 2 or 4 digits but must not be followed by a % or other digit
 		my $yr = '(19|20)?\d{2}?(?![%\d])';
 	
+		# NB. extended patterns don't count as $<num>
+		my $pattern = "(?:(?<!\d)($day)(?:$suffix)?(?:$sep))?(?:($mstr)|\b($mdig))(?:$sep)($yr)(?![%\d])";
+
 		# FIXME: February 27, 2000
 		# FIXME: need to handle $mstr and $mdig differently
-		# NB. extended patterns don't 'match' or count as $<num>
-		while ($text =~ /((?<!\d)($day)($suffix)?($sep))?(($mstr)[a-z]*,?|\b($mdig))($sep)($yr)(?![%\d])/ig) {
+		while ($text =~ /$pattern/ig) {
 			# catch any specific false positives
 			next if ($& =~ /^\d+\.\d+$/);
 
-			my $epoch = dform($2, $6, $7, $9);
+			my $epoch = dform($1, $2, $3, $4);
 			print LOG "\n** $& = " . localtime($epoch) . "\n";
 
 			# catch dates outside of acceptable range
