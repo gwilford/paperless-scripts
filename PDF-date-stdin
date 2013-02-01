@@ -93,9 +93,11 @@ sub process {
 		my $yr = '(19|20)?\d{2}?(?![%\d])';
 	
 		# NB. extended patterns don't count as $<num>
-		# day cannot be prefixed by more digits
-		my $pattern = "(?:(?<!\d)($day)(?:$suffix)?(?:$sep))?" .
-			      "(?:($mstr)|\b($mdig))(?:$sep)($yr)(?![%\d])";
+		# day or mdig cannot be prefixed by digits
+		my $pattern = '(?<!\w)' .
+			      "(?:($day)(?:$suffix)?(?:$sep))?" .
+			      "(?:($mstr)|($mdig))(?:$sep)($yr)" .
+			      '(?![\w])';
 
 		# FIXME: February 27, 2000
 		# FIXME: need to handle $mstr and $mdig differently
