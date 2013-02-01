@@ -28,19 +28,22 @@ sub usage {
 our($opt_t, $opt_L, $opt_c);
 getopts('tcL:') || usage();
 
-my $test = $opt_t;
-my $logfile = $opt_L ? $opt_L : '/dev/null';
 my $filename = $ARGV[0];
 
+sub printlog {
+	return unless ($opt_L);
+	print LOG $_[0];
+}
+
 # debgugging
-open (LOG, ">>$logfile") or die "cannot log";
-print LOG "$filename\n" if ($filename);
+open (LOG, ">>$opt_L") or die "cannot log" if ($opt_L);
+printlog "$filename\n" if ($filename);
 
 # Process the text
 print process() . "\n";
 
-print LOG "\n";
-close LOG;
+printlog "\n";
+close LOG if ($opt_L);
 
 # parse dates and return seconds since epoch
 sub dform {
@@ -76,7 +79,7 @@ sub process {
 	# content passed by DEVONthink/applescript has CR line-endings instead of LF
 	local $/ = "\r" if ($opt_c);
 	while (my $text = <STDIN>) {
-		print LOG $text;
+		printlog $text;
 		# separators can be '-|/|.' or whitespace 
 		# FIXME: separators should be consistent using backrefs but need to handle
 		#        single or multi-whitespace
@@ -98,19 +101,19 @@ sub process {
 	
 		# NB. extended patterns don't count as $<num>
 		# day or mdig cannot be prefixed by digits
+		# FIXME: need to handle $mstr and $mdig differently
 		my $pattern = '(?<![\w\/£-])' .
 			      "(?:($day)(?:$suffix)?(?:$sep))?" .
 			      "(?:($mstr),?|($mdig))(?:$sep)" .
 			      "(?:($day)(?:$suffix)?,(?:$sep))?($yr)" .
 			      '(?![\w\/%-])';
 
-		# FIXME: need to handle $mstr and $mdig differently
 		while ($text =~ /$pattern/ig) {
 			# catch any specific false positives
 			next if ($& =~ /^\d+\.\d+$/);
 
 			my $epoch = dform($1, $2, $3, $4, $5);
-			print LOG "\n** $& = " . localtime($epoch) . "\n";
+			printlog "\n** $& = " . localtime($epoch) . "\n";
 
 			# catch dates outside of acceptable range
 			next if ($epoch > $now + $future || 
@@ -125,8 +128,9 @@ sub process {
 				# no day number
 				$name = strftime("%Y-%m", localtime($epoch));
 			}
-			print LOG "** title = $name\n";
-			return $name unless ($test);
+			printlog "** title = $name\n";
+			# keep processing if in test mode
+			return $name unless ($opt_t);
 		}
 	}		
 	return "no date";
