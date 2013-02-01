@@ -10,7 +10,7 @@ set MaxTextSize to 20000
 tell application id "com.devon-technologies.thinkpro2"
 	try
 		set this_selection to the selection
-		if this_selection is {} then error "Please select some contents."
+		if this_selection is {} then error "Please select some records."
 		
 		set number_of_steps to count of this_selection
 		show progress indicator "Parsing documents…" steps number_of_steps

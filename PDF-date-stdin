@@ -94,10 +94,10 @@ sub process {
 	
 		# NB. extended patterns don't count as $<num>
 		# day or mdig cannot be prefixed by digits
-		my $pattern = '(?<!\w)' .
+		my $pattern = '(?<![\w\/£-])' .
 			      "(?:($day)(?:$suffix)?(?:$sep))?" .
 			      "(?:($mstr)|($mdig))(?:$sep)($yr)" .
-			      '(?![\w])';
+			      '(?![\w\/%-])';
 
 		# FIXME: February 27, 2000
 		# FIXME: need to handle $mstr and $mdig differently
