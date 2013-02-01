@@ -44,27 +44,31 @@ close LOG;
 
 # parse dates and return seconds since epoch
 sub dform {
-	my ($d, $mstr, $mdig, $y) = @_;
-	my $m;
-
+	my ($day, $mstr, $mdig, $altday, $yr) = @_;
+	my $mon;
+	
 	# set to 1st of month if no day in date
-	$d = 1 unless ($d);
+	if ($altday) {
+		$day = $altday;
+	} elsif (!$day) {
+		$day = 1;
+	}
 
 	# convert month number or short-name to timelocal $mon
 	if ($mdig) {
-		$m = $mdig-1;
+		$mon = $mdig-1;
 	} else {
-		$m = $monthy{lc(substr($mstr, 0, 3))};
+		$mon = $monthy{lc(substr($mstr, 0, 3))};
 	}
 
 	# ensure 4-digit year
-	if ($y < 20) {
-		$y += 2000;
-	} elsif ($y < 1900) {
-		$y += 1900;
+	if ($yr < 20) {
+		$yr += 2000;
+	} elsif ($yr < 1900) {
+		$yr += 1900;
 	}
 
-	return timelocal(0, 0, 0, $d, $m, $y);
+	return timelocal(0, 0, 0, $day, $mon, $yr);
 }
 
 # parse text, change file timestamp and return date for filename
@@ -96,16 +100,16 @@ sub process {
 		# day or mdig cannot be prefixed by digits
 		my $pattern = '(?<![\w\/£-])' .
 			      "(?:($day)(?:$suffix)?(?:$sep))?" .
-			      "(?:($mstr)|($mdig))(?:$sep)($yr)" .
+			      "(?:($mstr),?|($mdig))(?:$sep)" .
+			      "(?:($day)(?:$suffix)?,(?:$sep))?($yr)" .
 			      '(?![\w\/%-])';
 
-		# FIXME: February 27, 2000
 		# FIXME: need to handle $mstr and $mdig differently
 		while ($text =~ /$pattern/ig) {
 			# catch any specific false positives
 			next if ($& =~ /^\d+\.\d+$/);
 
-			my $epoch = dform($1, $2, $3, $4);
+			my $epoch = dform($1, $2, $3, $4, $5);
 			print LOG "\n** $& = " . localtime($epoch) . "\n";
 
 			# catch dates outside of acceptable range
