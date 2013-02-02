@@ -1,12 +1,12 @@
-# Test strings agaianst expected results in pipes |no date|
+# Test strings against expected results in pipes |no date|
 17/10/90			|1990-10-17|
  01.02.1990			|1990-02-01|
-	23-5-10			|no date|
+	23-5-10			|2010-05-23|
 xxyy 1st Aug 2000		|2000-08-01|
 2 February 88 aabb		|1988-02-02|
 May 2012 123 #Just the month	|2012-05|
-June 24, 2003 #Not handled	|2003-6-24|
-123 Feb 2000			|no date|
+June 24, 2003 #Not handled	|2003-06-24|
+123 Feb 2000			|2000-02|
 23 Feb 200 1			|no date|
 23 Feb 20010			|no date|
 1.00				|no date|

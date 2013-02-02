@@ -18,6 +18,7 @@ my %monthy = ( jan => 0, feb => 1, mar => 2, apr => 3, may => 4, jun => 5, jul =
 my $year = 52*7*24*3600;
 my $future = 30*24*3600;
 my $past = 30*$year;
+my $testfail = 0;
 
 sub usage {
 	die "Usage: $0 [ -t ] [ -c ] [ -L logfile ] [ filename ]\n" .
@@ -51,6 +52,7 @@ sub testmatch {
 			print "PASS: $match: $text";
 		} else {
 			print "FAIL: $match != $expected: $text";
+			$testfail++;
 		}
 	} else {
 		print "BAD : no expected answer in test line";
@@ -67,11 +69,6 @@ sub dform {
 	my ($day, $mstr, $mdig, $altday, $yr) = @_;
 	my $mon;
 	
-	# for test purposes
-	if (!$yr) {
-		return timelocal(0, 0, 0, 1, 1, 0);
-	}
-
 	# set to 1st of month if no day in date
 	if ($altday) {
 		$day = $altday;
@@ -131,11 +128,15 @@ sub process {
 			      '(?![\w\/%-])';
 
 		while ($text =~ /$pattern/ig || $opt_t) {
+			if (!$&) {
+				testmatch($text, "no date");
+				last;
+			}
 			# catch any specific false positives
-			next if ($& && $& =~ /^\d+\.\d+$/);
+			next if ($& =~ /^\d+\.\d+$/);
 
 			my $epoch = dform($1, $2, $3, $4, $5);
-			printlog("\n** $& = " . localtime($epoch) . "\n") if ($&);
+			printlog("\n** $& = " . localtime($epoch) . "\n");
 
 			# catch dates outside of acceptable range
 			next if ($epoch > $now + $future || 
@@ -144,10 +145,7 @@ sub process {
 			# set file timestamp
 			utime($epoch, $epoch, $filename) if ($filename);
 			my $name;
-			if (!$5) {
-				# for test only
-				$name = "no date";
-			} elsif ($1) {
+			if ($1 || $4) {
 				$name = strftime("%Y-%m-%d", localtime($epoch));
 			} else {
 				# no day number
@@ -163,5 +161,12 @@ sub process {
 			return $name;
 		}
 	}		
+	if ($opt_t) {
+		if ($testfail) {
+			return "\n** failed $testfail tests **";
+		} else {
+			return "\n** passed all tests **";
+		}
+	}
 	return "no date";
 }
