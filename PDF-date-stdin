@@ -1,9 +1,9 @@
 #!/usr/bin/perl -w
 
-# Take text on STDIN and a source filename as 1st argument
+# Take text on STDIN and an optional source filepath
 # - search for appropriate date string in text
-# - set the source file modification time to date (if found)
-# - print out date string for use as name of file/record
+# - set the filepath modification time to date (if found)
+# - print out date string as YYYY-MM-DD or YYYY-MM for use as name of file/record
 
 use Time::Local;
 use POSIX qw(strftime);
@@ -21,22 +21,22 @@ my $past = 30*$year;
 my $testfail = 0;
 
 sub usage {
-	die "Usage: $0 [ -t ] [ -c ] [ -L logfile ] [ filename ]\n" .
-	    "       -t: test mode - continue after first match\n" .
-	    "       -c: CR instead of LF\n";
+	die "Usage: $0 [ -t ] [ -c ] [ -L logfile ] [ filepath ]\n" .
+	    "       -t: test mode\n" .
+	    "       -c: CR instead of LF at end of line\n";
 }
 
 our($opt_t, $opt_L, $opt_c);
 getopts('tcL:') || usage();
 
-my $filename = $ARGV[0];
+my $filepath = $ARGV[0];
 
 # debgugging
 if ($opt_L) {
 	open (LOG, ">>$opt_L") or die "cannot log";
 }
 
-printlog("$filename\n") if ($filename);
+printlog("$filepath\n") if ($filepath);
 
 # Process the text
 print process() . "\n";
@@ -46,16 +46,17 @@ close LOG if ($opt_L);
 
 sub testmatch {
 	my ($text, $match) = @_;
+	chomp($text);
 	if ($text =~ /\|([^|]+)\|/) {
 		my $expected = $1;
 		if ($match eq $expected) {
-			print "PASS: $match: $text";
+			print "PASS |$match|: \'$text\'\n";
 		} else {
-			print "FAIL: $match != $expected: $text";
+			print "FAIL |$match|: \'$text\'\n";
 			$testfail++;
 		}
 	} else {
-		print "BAD : no expected answer in test line";
+		print "BAD  no expected result found: $text\n";
 	}
 }
 
@@ -67,7 +68,7 @@ sub printlog {
 # parse dates and return seconds since epoch
 sub dform {
 	my ($day, $mstr, $mdig, $altday, $yr) = @_;
-	my $mon;
+	my ($mon, $epoch);
 	
 	# set to 1st of month if no day in date
 	if ($altday) {
@@ -90,10 +91,11 @@ sub dform {
 		$yr += 1900;
 	}
 
-	return timelocal(0, 0, 0, $day, $mon, $yr);
+	# catch croak on illegal date
+	return eval { timelocal(0, 0, 0, $day, $mon, $yr) };
 }
 
-# parse text, change file timestamp and return date for filename
+# parse text, change filepath timestamp and return date for file name
 sub process {
 	# content passed by DEVONthink/applescript has CR line-endings instead of LF
 	local $/ = "\r" if ($opt_c);
@@ -128,14 +130,20 @@ sub process {
 			      '(?![\w\/%-])';
 
 		while ($text =~ /$pattern/ig || $opt_t) {
+			my ($epoch, $name);
 			if (!$&) {
+				# test mode and nothing matched or
+				# something matched but failed range checking,
+				# forcing us back around the loop
 				testmatch($text, "no date");
 				last;
 			}
 			# catch any specific false positives
 			next if ($& =~ /^\d+\.\d+$/);
 
-			my $epoch = dform($1, $2, $3, $4, $5);
+			# get time-in-seconds since epoch or undef
+			# if date not legal
+			next unless ($epoch = dform($1, $2, $3, $4, $5));
 			printlog("\n** $& = " . localtime($epoch) . "\n");
 
 			# catch dates outside of acceptable range
@@ -143,18 +151,18 @@ sub process {
 				 $epoch < $now - $past);
 
 			# set file timestamp
-			utime($epoch, $epoch, $filename) if ($filename);
-			my $name;
+			utime($epoch, $epoch, $filepath) if ($filepath);
+
 			if ($1 || $4) {
 				$name = strftime("%Y-%m-%d", localtime($epoch));
 			} else {
-				# no day number
+				# no day of month
 				$name = strftime("%Y-%m", localtime($epoch));
 			}
 			printlog("** title = $name\n");
 
-			# keep processing if in test mode
 			if ($opt_t) {
+				# test mode and we have a match
 				testmatch($text, $name);
 				last;
 			}
@@ -162,6 +170,7 @@ sub process {
 		}
 	}		
 	if ($opt_t) {
+		# analyse test performance
 		if ($testfail) {
 			return "\n** failed $testfail tests **";
 		} else {
