@@ -106,7 +106,7 @@ sub process {
 		printlog($text);
 		# separators can be '-|/|.' or whitespace 
 		# FIXME: separators should be consistent using backrefs but need to handle
-		#        single or multi-whitespace
+		#        single or multi-whitespace and cases where there is no backref
 		my $sep = '-|\/|\.|\s+';
 		# day can be:
 		# - single digit with or without leading zero
@@ -119,9 +119,10 @@ sub process {
 		my $mstr = 'jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may' .
 			   '|june?|july?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?' .
 			   '|nov(?:ember)?|dec(?:ember)?';
+		# ...or 1 or 2 digits 
 		my $mdig = '1[012]|0?[1-9]';
-		# year can be 2 or 4 digits but must not be followed by a % or digit
-		my $yr = '(19|20)?\d{2}?(?![%\d])';
+		# year can be 2 or 4 digits
+		my $yr = '(19|20)?\d{2}?';
 	
 		# NB. extended patterns don't count as $<num>
 		# day or mdig cannot be prefixed by digits
