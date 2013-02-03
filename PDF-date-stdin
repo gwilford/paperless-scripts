@@ -105,8 +105,9 @@ sub process {
 	while (my $text = <STDIN>) {
 		printlog($text);
 		# separators can be '-|/|.' or whitespace 
-		# FIXME: separators should be consistent using backrefs but need to handle
-		#        single or multi-whitespace and cases where there is no backref
+		#   separators should be consistent using backrefs but need to handle
+		#   single or multi-whitespace and cases where there is no backref -
+		#   mostly handled by catching false positives
 		my $sep = '-|\/|\.|\s+';
 		# day can be:
 		# - single digit with or without leading zero
@@ -126,7 +127,6 @@ sub process {
 	
 		# NB. extended patterns don't count as $<num>
 		# day or mdig cannot be prefixed by digits
-		# FIXME: need to handle $mstr and $mdig differently
 		my $pattern = '(?<![\w\/£-])' .
 			      "(?:($day)(?:$suffix)?(?:$sep))?" .
 			      "(?:($mstr),?|($mdig))(?:$sep)" .
@@ -142,8 +142,12 @@ sub process {
 				testmatch($text, "no date");
 				last;
 			}
-			# catch any specific false positives
-			next if ($& =~ /^\d+\.\d+$/);
+			# catch specific false positives
+			#   MM YY with a '.' as separator
+			next if ($& =~ /^\d+(?:\.|\s+)\d+$/);
+			#   DD MM YY where the separators don't match
+			#   (constrain scope of $1, $2)
+			next if eval { $& =~ /^\d+($sep)\d+($sep)\d+$/ && $1 ne $2 };
 
 			# get time-in-seconds since epoch or undef
 			# if date not legal
@@ -176,9 +180,9 @@ sub process {
 	if ($opt_t) {
 		# analyse test performance
 		if ($testfail) {
-			return "\n** failed $testfail tests **";
+			return "\n**FAILED** $testfail tests!";
 		} else {
-			return "\n** passed all tests **";
+			return "\nPASSED all tests";
 		}
 	}
 	return "no date";

@@ -2,12 +2,13 @@
 -- Created by Graeme Wilford 8/9/2012
 -- Copyright (c) 2012, 2013. All rights reserved.
 
-set appsupp to path to application support from user domain
-set home to path to home folder
 
 -- the perl script (takes document text on STDIN and source file path)
+set appsupp to path to application support from user domain
 set PDFdate to quoted form of (POSIX path of appsupp & "DEVONthink Pro 2/PDF-date-stdin")
--- location of the logfile for debugging
+
+-- location of an optional logfile for debugging
+--set home to path to home folder
 --set logfile to quoted form of (POSIX path of home & "PDF-date-stdin.out")
 --set PDFdate_args to " -c -L " & logfile & " "
 set PDFdate_args to " -c "
