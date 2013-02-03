@@ -102,12 +102,12 @@ sub dform {
 sub process {
 	# content passed by DEVONthink/applescript has CR line-endings instead of LF
 	local $/ = "\r" if ($opt_c);
+
+	# take a line at a time
 	while (my $text = <STDIN>) {
 		printlog($text);
+
 		# separators can be '-|/|.' or whitespace 
-		#   separators should be consistent using backrefs but need to handle
-		#   single or multi-whitespace and cases where there is no backref -
-		#   mostly handled by catching false positives
 		my $sep = '-|\/|\.|\s+';
 		# day can be:
 		# - single digit with or without leading zero
@@ -135,13 +135,11 @@ sub process {
 		# (day or mdig cannot be prefixed by digits)
 		# look-behind and don't match a specific list of chars
 		my $pattern = '(?<![\w\/£-])';
-
 		# optionally match ($1 = D|DD) and ($2 = day/month separator)
 		$pattern .= "(?:" .
 				"($day)(?:$suffix)?($sep)" .
 			    ")?";
-		
-		# match either ($3 = short or full Month string) or 
+		# match either ($3 = Month string) or 
 		#	       ($4 = M|MM number)
 		# if matching a number, either look-ahead and match the
 		# previous separator (\2) or look-behind and don't match
@@ -150,17 +148,16 @@ sub process {
 				"($mstr),?|" .
 				"($mdig)" . '(?(?![\.\s-])|(?=\2))' .
 			    ")(?:$sep)";
-		
 		# optionally match ($5 = DD) if followed by ,
-		# eg. February (12)th, 2010
+		#   eg. February (12)th, 2010
 		# and then match ($6 = YYYY|YY)
 		$pattern .= "(?:" .
 				"($day)(?:$suffix)?,(?:$sep)" .
 			    ")?($yr)";
-		
 		# look-ahead and don't match a specifc list of chars
 		$pattern .= '(?![\w\/%-])';
 
+		# cycle through matches on current line
 		while ($text =~ /$pattern/ig || $opt_t) {
 			my ($epoch, $name);
 			if (!$&) {
@@ -183,12 +180,11 @@ sub process {
 			# set file timestamp
 			utime($epoch, $epoch, $filepath) if ($filepath);
 
-			if ($1 || $5) {
-				$name = strftime("%Y-%m-%d", localtime($epoch));
-			} else {
-				# no day of month
-				$name = strftime("%Y-%m", localtime($epoch));
-			}
+			# format date string as YYYY-MM or YYYY-MM-DD
+			my $format = "%Y-%m";
+			$format .= "-%d" if ($1 || $5);
+			$name = strftime($format, localtime($epoch));
+
 			printlog("** title = $name\n");
 
 			if ($opt_t) {
