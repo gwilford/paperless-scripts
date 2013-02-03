@@ -2,33 +2,34 @@
 17/10/90			|1990-10-17|
  01.02.1990			|1990-02-01|
 	23-5-10			|2010-05-23|
+ 1.2.3				|no date|
+ 1.2.03				|2003-02-01|
+10/12				|2012-10|
+ 01-4-1987			|1987-04-01|
+ 01 -4-1987			|no date|
+2-90				|no date|
+1.00				|no date|
+15.00%				|no date|
+02 8.83				|no date|
+2008-03-17			|no date|
 xxyy 1st Aug 2000		|2000-08-01|
 2 February 88 aabb		|1988-02-02|
 May 2012 123 #Just the month	|2012-05|
 June 24, 2003 			|2003-06-24|
-123 Feb 2000			|2000-02|
+page 123 Feb 2000		|2000-02|
 23 Feb 200 1			|no date|
 23 Feb 20010			|no date|
-1.00				|no date|
-15.00%				|no date|
 December 123, 2012		|no date|
-  10 Decmber 2011 #misspelled	|no date|
  15th Aug 99			|1999-08-15|
 Nov 2010, 15			|2010-11|
-10/12				|2012-10|
- 01-4-1987			|1987-04-01|
- 01 -4-1987			|no date|
+  10 Decmber 2011 #misspelled	|no date|
 31-02-2009 #day out of range	|no date|
 23-13-2005 #month out of range	|no date|
 1-1-2050 #in the future		|no date|
  4th May 1867 #in the past	|no date|
                        17 Mar 8 |no date|
                        17 Mar 08|2008-03-17|
-2008-03-17			|no date|
- 1.2.3				|no date|
- 1.2.03				|2003-02-01|
 March 21st, 1991		|1991-03-21|
 March 21st 1991			|no date|
 March 21,1991			|no date|
-02 8.83				|no date|
 page 1 of 5 18 October 2003	|2003-10-18|

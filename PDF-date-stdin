@@ -53,9 +53,9 @@ sub testmatch {
 	if ($text =~ /\|([^|]+)\|/) {
 		my $expected = $1;
 		if ($match eq $expected) {
-			print "PASS |$match|: \'$text\'\n";
+			print "PASS $match: \'$text\'\n";
 		} else {
-			print "FAIL |$match|: \'$text\'\n";
+			print "FAIL $match: \'$text\'\n";
 			$testfail++;
 		}
 	} else {
@@ -125,13 +125,41 @@ sub process {
 		# year can be 2 or 4 digits
 		my $yr = '(19|20)?\d{2}?';
 	
+		# Build up a single REGEX pattern which can 
+		# be matched in a while() loop using /g
+		# to save position and match again further
+		# down the line if range-checking ultimately fails
+
 		# NB. extended patterns don't count as $<num>
-		# day or mdig cannot be prefixed by digits
-		my $pattern = '(?<![\w\/£-])' .
-			      "(?:($day)(?:$suffix)?(?:$sep))?" .
-			      "(?:($mstr),?|($mdig))(?:$sep)" .
-			      "(?:($day)(?:$suffix)?,(?:$sep))?($yr)" .
-			      '(?![\w\/%-])';
+
+		# (day or mdig cannot be prefixed by digits)
+		# look-behind and don't match a specific list of chars
+		my $pattern = '(?<![\w\/£-])';
+
+		# optionally match ($1 = D|DD) and ($2 = day/month separator)
+		$pattern .= "(?:" .
+				"($day)(?:$suffix)?($sep)" .
+			    ")?";
+		
+		# match either ($3 = short or full Month string) or 
+		#	       ($4 = M|MM number)
+		# if matching a number, either look-ahead and match the
+		# previous separator (\2) or look-behind and don't match
+		# a specific list of chars
+		$pattern .= "(?:" .
+				"($mstr),?|" .
+				"($mdig)" . '(?(?![\.\s-])|(?=\2))' .
+			    ")(?:$sep)";
+		
+		# optionally match ($5 = DD) if followed by ,
+		# eg. February (12)th, 2010
+		# and then match ($6 = YYYY|YY)
+		$pattern .= "(?:" .
+				"($day)(?:$suffix)?,(?:$sep)" .
+			    ")?($yr)";
+		
+		# look-ahead and don't match a specifc list of chars
+		$pattern .= '(?![\w\/%-])';
 
 		while ($text =~ /$pattern/ig || $opt_t) {
 			my ($epoch, $name);
@@ -142,16 +170,10 @@ sub process {
 				testmatch($text, "no date");
 				last;
 			}
-			# catch specific false positives
-			#   MM YY with a '.' as separator
-			next if ($& =~ /^\d+(?:\.|\s+)\d+$/);
-			#   DD MM YY where the separators don't match
-			#   (constrain scope of $1, $2)
-			next if eval { $& =~ /^\d+($sep)\d+($sep)\d+$/ && $1 ne $2 };
 
 			# get time-in-seconds since epoch or undef
 			# if date not legal
-			next unless ($epoch = dform($1, $2, $3, $4, $5));
+			next unless ($epoch = dform($1, $3, $4, $5, $6));
 			printlog("\n** $& = " . localtime($epoch) . "\n");
 
 			# catch dates outside of acceptable range
@@ -161,7 +183,7 @@ sub process {
 			# set file timestamp
 			utime($epoch, $epoch, $filepath) if ($filepath);
 
-			if ($1 || $4) {
+			if ($1 || $5) {
 				$name = strftime("%Y-%m-%d", localtime($epoch));
 			} else {
 				# no day of month
