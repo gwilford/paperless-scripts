@@ -44,7 +44,7 @@ tell application id "com.devon-technologies.thinkpro2"
 				
 				-- do the heavy lifting
 				-- NB. shell can only handle ~260k command line	
-				set theName to do shell script "echo " & quoted form of theTrimmedText & " | " & PDFdate & PDFdate_args & quoted form of thePath
+				set theName to do shell script "/bin/echo " & quoted form of theTrimmedText & " | " & PDFdate & PDFdate_args & quoted form of thePath
 				
 				-- get the file timestamp
 				tell application "System Events"
