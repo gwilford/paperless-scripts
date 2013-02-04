@@ -24,8 +24,8 @@ edit PDF-date-stdin and adjust $future or $past
 
 For use with DEVONthink Pro:
 - Copy the perl script, PDF-date-stdin to ~/Library/Application Support/DEVONthink Pro 2/ <code>$ cp PDF-date-stdin ~/Library/Application\ Support/DEVONthink\ Pro\ 2/</code>
-- Copy the AppleScript, 'Set Creation Date from Contents.scpt' to somewhere below the DTP scripts folder, ~/Library/Application Support/DEVONthink Pro 2/Scripts/ <code>$ cp Set\ Creation\ Date\ from\ Contents.scpt ~/Library/Application\ Support/DEVONthink\ Pro\ 2/Scripts/</code>
-- Refresh the DTP script menu or restart DTP
+- Copy the AppleScript, 'Set Creation Date from Contents.scpt' to somewhere below the DTP scripts folder, ~/Library/Application Support/DEVONthink Pro 2/Scripts/ <code>$ cp Set\ Creation\ Date\ from\ Contents.scpt ~/Library/Application\ Support/DEVONthink\ Pro\ 2/Scripts/Rename/</code>
+- Refresh the DTP scripts menu or restart DTP
 
 You'll need to edit the AppleScript to enable logging, to change the amount of text sent for parsing or the location
 of the perl script.
