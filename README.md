@@ -4,6 +4,7 @@ paperless-scripts
 Scripts to aid going paperless...
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 PDF-date-stdin searches text presented on STDIN for a well-formed date (many styles are matched, see the TestFile for details). If no date is found, the script prints "no date" on STDOUT. Otherwise the first date found is converted to YYYY-MM-DD format (or YYYY-MM if no day specifed in date) and printed to STDOUT. In addition, if a source file is provided as an agument to the script, the modification and creation dates of the file are changed to reflect the date found.
 
 The script takes three command line options, -t, -c and -L \<logfile\>;
@@ -34,3 +35,5 @@ of the perl script.
 **Don't use this branch - use the No_CPAN_modules branch!**
 
 >>>>>>> 0f27b3cd17f1f65fb07fa021589a465fa05538ef
+=======
+>>>>>>> 6ed8d41eb24b87465df811d92eeb59c4d4aded5c
