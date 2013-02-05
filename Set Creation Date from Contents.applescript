@@ -2,14 +2,24 @@
 -- Created by Graeme Wilford 8/9/2012
 -- Copyright (c) 2012, 2013. All rights reserved.
 
--- the perl script (takes document text on STDIN and source file path as 1st argument)
-set PDFdate to "/Users/gwilford/paperless-scripts/PDF-date-stdin"
+
+-- the perl script (takes document text on STDIN and source file path)
+set appsupp to path to application support from user domain
+set PDFdate to quoted form of (POSIX path of appsupp & "DEVONthink Pro 2/PDF-date-stdin")
+
+-- location of an optional logfile for debugging
+--set home to path to home folder
+--set logfile to quoted form of (POSIX path of home & "PDF-date-stdin.out")
+--set PDFdate_args to " -c -L " & logfile & " "
+set PDFdate_args to " -c "
+
+-- Maximum amount of text to process for date string
 set MaxTextSize to 20000
 
 tell application id "com.devon-technologies.thinkpro2"
 	try
 		set this_selection to the selection
-		if this_selection is {} then error "Please select some contents."
+		if this_selection is {} then error "Please select some records."
 		
 		set number_of_steps to count of this_selection
 		show progress indicator "Parsing documents…" steps number_of_steps
@@ -34,7 +44,7 @@ tell application id "com.devon-technologies.thinkpro2"
 				
 				-- do the heavy lifting
 				-- NB. shell can only handle ~260k command line	
-				set theName to do shell script "echo " & quoted form of theTrimmedText & " | " & PDFdate & space & quoted form of thePath
+				set theName to do shell script "/bin/echo " & quoted form of theTrimmedText & " | " & PDFdate & PDFdate_args & quoted form of thePath
 				
 				-- get the file timestamp
 				tell application "System Events"

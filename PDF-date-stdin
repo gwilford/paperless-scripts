@@ -1,127 +1,207 @@
 #!/usr/bin/perl -w
 
-# Take text on STDIN and a source filename as 1st argument
+# -- Created by Graeme Wilford 8/9/2012
+# -- Copyright (c) 2012, 2013. All rights reserved.
+
+# Take text on STDIN and an optional source filepath
 # - search for appropriate date string in text
-# - set the source file modification time to date (if found)
-# - print out date string for use as name of file/record
+# - set the filepath modification time to date (if found)
+# - print out date string as YYYY-MM-DD or YYYY-MM for use as name of file/record
 
-use Date::Extract;
+use Time::Local;
+use POSIX qw(strftime);
+use strict;
+use Getopt::Std;
 
-my $parser = Date::Extract->new();
 my $now = time();
-my $today = DateTime->now();
-my $year = 52*7*24*3600;
-my @monthy = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
+my %monthy = ( jan => 0, feb => 1, mar => 2, apr => 3, may => 4, jun => 5, jul => 6, 
+	       aug => 7, sep => 8, oct => 9, nov => 10, dec => 11);
 
 # Range of dates that are deemed allowable ($past > date > $future)
-#my $future = $year;
+my $year = 52*7*24*3600;
 my $future = 30*24*3600;
 my $past = 30*$year;
+my $testfail = 0;
 
-# initial part of document to check first
-my $initial_size = 500;
+sub usage {
+	die "Usage: $0 [ -t ] [ -c ] [ -L logfile ] [ filepath ]\n" .
+	    "       -t: test mode\n" .
+	    "       -c: CR instead of LF at end of line\n";
+}
 
-my $filename = $ARGV[0] || die "no filename supplied";
+our($opt_t, $opt_L, $opt_c);
+getopts('tcL:') || usage();
+
+my $filepath = $ARGV[0];
 
 # debgugging
-open (LOG, ">>/Users/gwilford/dateparse.log") or die "cannot log";
-print LOG "$filename\n";
+if ($opt_L) {
+	open (LOG, ">>$opt_L") or die "cannot log";
+}
+
+printlog("$filepath\n") if ($filepath);
 
 # Process the text
 print process() . "\n";
 
-print LOG "\n";
-close LOG;
+printlog("\n");
+close LOG if ($opt_L);
 
-# re-form parsed dates in Date::Extract friendly format including y2k fix
-sub dform {
-	my ($d, $m, $y) = @_;
-	print LOG "$y/$m/$d: ";
-
-	# set to 1st of month if no day in date
-	if (!$d) {
-		$d = 1;
+sub testmatch {
+	my ($text, $match) = @_;
+	chomp($text);
+	if ($text =~ /\|([^|]+)\|/) {
+		my $expected = $1;
+		if ($match eq $expected) {
+			print "PASS $match: \'$text\'\n";
+		} else {
+			print "FAIL $match: \'$text\'\n";
+			$testfail++;
+		}
+	} else {
+		print "BAD  no expected result found: $text\n";
 	}
-	# lookup short month name if digit passed
-	if ($m =~ m/\d+/) {
-		$m = $monthy[$m-1];
+}
+
+sub printlog {
+	return unless ($opt_L);
+	print LOG $_[0];
+}
+
+# parse dates and return seconds since epoch
+sub dform {
+	my ($day, $mstr, $mdig, $altday, $yr) = @_;
+	my ($mon, $epoch);
+	
+	# set to 1st of month if no day in date
+	if ($altday) {
+		$day = $altday;
+	} elsif (!$day) {
+		$day = 1;
+	}
+
+	# convert month number or short-name to timelocal $mon
+	if ($mdig) {
+		$mon = $mdig-1;
+	} else {
+		$mon = $monthy{lc(substr($mstr, 0, 3))};
 	}
 
 	# ensure 4-digit year
-	if ($y < 20) {
-		$y += 2000;
-	} elsif ($y < 1900) {
-		$y += 1900;
+	if ($yr < 20) {
+		$yr += 2000;
+	} elsif ($yr < 1900) {
+		$yr += 1900;
 	}
 
-	# for Date::Extract 
-	my $s = sprintf(" %s %d, %4d", $m, $d, $y);
-	print LOG $s . "\n";
-	return ($s);
+	# catch croak on illegal date
+	return eval { timelocal(0, 0, 0, $day, $mon, $yr) };
 }
 
-	
+# parse text, change filepath timestamp and return date for file name
 sub process {
-	my ($dt, $textlen, $line);
-	my $text = "";
+	# content passed by DEVONthink/applescript has CR line-endings instead of LF
+	local $/ = "\r" if ($opt_c);
 
-	while ($line = <STDIN>) {
-		$text .= $line;
+	# take a line at a time
+	while (my $text = <STDIN>) {
+		printlog($text);
+
+		# separators can be '-|/|.' or whitespace 
+		my $sep = '-|\/|\.|\s+';
+		# day can be:
+		# - single digit with or without leading zero
+		# - double digit
+		# - suffixed (eg 1st, 15th, 22nd)
+		# - missing
+		my $day = '0?[1-9]|[12][0-9]|3[01]';
+		my $suffix = 'st|nd|rd|th';
+		# month can be full or short name
+		my $mstr = 'jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may' .
+			   '|june?|july?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?' .
+			   '|nov(?:ember)?|dec(?:ember)?';
+		# ...or 1 or 2 digits 
+		my $mdig = '1[012]|0?[1-9]';
+		# year can be 2 or 4 digits
+		my $yr = '(19|20)?\d{2}?';
+	
+		# Build up a single REGEX pattern which can 
+		# be matched in a while() loop using /g
+		# to save position and match again further
+		# down the line if range-checking ultimately fails
+
+		# NB. extended patterns don't count as $<num>
+
+		# (day or mdig cannot be prefixed by digits)
+		# look-behind and don't match a specific list of chars
+		my $pattern = '(?<![\w\/£-])';
+		# optionally match ($1 = D|DD) and ($2 = day/month separator)
+		$pattern .= "(?:" .
+				"($day)(?:$suffix)?($sep)" .
+			    ")?";
+		# match either ($3 = Month string) or 
+		#	       ($4 = M|MM number)
+		# if matching a number, either look-ahead and match the
+		# previous separator (\2) or look-behind and don't match
+		# a specific list of chars
+		$pattern .= "(?:" .
+				"($mstr),?|" .
+				"($mdig)" . '(?:(?![\.\s-\/])|(?=\2))' .
+			    ")(?:$sep)";
+		# optionally match ($5 = DD) if followed by ,
+		#   eg. February (12)th, 2010
+		# and then match ($6 = YYYY|YY)
+		$pattern .= "(?:" .
+				"($day)(?:$suffix)?,(?:$sep)" .
+			    ")?($yr)";
+		# look-ahead and don't match a specifc list of chars
+		$pattern .= '(?![\w\/%-])';
+
+		# cycle through matches on current line
+		while ($text =~ /$pattern/ig || $opt_t) {
+			my ($epoch, $name);
+			if (!$&) {
+				# test mode and nothing matched or
+				# something matched but failed range checking,
+				# forcing us back around the loop
+				testmatch($text, "no date");
+				last;
+			}
+
+			# get time-in-seconds since epoch or undef
+			# if date not legal
+			next unless ($epoch = dform($1, $3, $4, $5, $6));
+			printlog("\n** $& = " . localtime($epoch) . "\n");
+
+			# catch dates outside of acceptable range
+			next if ($epoch > $now + $future || 
+				 $epoch < $now - $past);
+
+			# set file timestamp
+			utime($epoch, $epoch, $filepath) if ($filepath);
+
+			# format date string as YYYY-MM or YYYY-MM-DD
+			my $format = "%Y-%m";
+			$format .= "-%d" if ($1 || $5);
+			$name = strftime($format, localtime($epoch));
+
+			printlog("** title = $name\n");
+
+			if ($opt_t) {
+				# test mode and we have a match
+				testmatch($text, $name);
+				last;
+			}
+			return $name;
+		}
 	}
-	return "no text" unless ($text);
-
-	print LOG $text;
-
-	# Pre-process various Date::Extract unfriendly date formats
-	#
-	# separators can be '-|/|.' or whitespace 
-	$sep = '-|\/|\.|\s+';
-	# day can be:
-	# - single digit with or without leading zero
-	# - double digit
-	# - suffixed (eg 1st, 15th, 22nd)
-	# - missing
-	$day = '0?[1-9]|[12][0-9]|3[01]';
-	$suffix = 'st|nd|rd|th';
-	# month can be full or short name
-	$month = 'jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec';
-	$month .= '|1[012]|0?[1-9]';
-	# year can be 2 or 4 digits
-	$yr = '(19|20)\d{2}?';
-	$text =~ s/($day)?($suffix)?($sep)?($month)\w*($sep)?($yr)/dform($1, $4, $6)/eig;
-
-	# lose now/today/tomorrow
-	$text =~ s/now|today|tomorrow//ig;
-
-	# lose days of week
-	$text =~ s/(mon|tues?|wed(nes)?|thu(rs)?|fri|sat(ur)?|sun)(day)?//ig;
-
-	# look for first "date*" string
-	if (substr($text, 0, $initial_size) =~ /date:?\s+(.*)/is) {
-		$dt = $parser->extract(substr($1, 0, 50));
+	if ($opt_t) {
+		# analyse test performance
+		if ($testfail) {
+			return "\n**FAILED** $testfail tests!";
+		} else {
+			return "\nPASSED all tests";
+		}
 	}
-
-	# check initial part of document text
-	if (!$dt) {
-		$dt = $parser->extract(substr($text, 0, $initial_size));
-	}
-
-	# check remaining parts of document
-	if (!$dt && length($text) > $initial_size) {
-		$dt = $parser->extract(substr($text, $initial_size-30));	
-	}
-	return "no date" unless $dt;
-
-	# sanity-check the date found
-	if ($dt->epoch > $now + $future ||
-	    $dt->epoch < $now - $past) {
-		return "no date";
-	# don't allow 'today'
-	#} elsif ($today->ymd eq $dt->ymd) {
-	#	return "no date";
-	}
-		
-	# date is good!
-	utime($dt->epoch, $dt->epoch, $filename);
-	return $dt->ymd;
+	return "no date";
 }
