@@ -15,6 +15,7 @@ set PDFdate_args to " -c "
 
 -- Maximum amount of text to process for date string
 set MaxTextSize to 20000
+set matched to 0
 
 tell application id "com.devon-technologies.thinkpro2"
 	try
@@ -46,6 +47,8 @@ tell application id "com.devon-technologies.thinkpro2"
 				-- NB. shell can only handle ~260k command line	
 				set theName to do shell script "/bin/echo " & quoted form of theTrimmedText & " | " & PDFdate & PDFdate_args & quoted form of thePath
 				
+				if theName is not "no date" then set matched to matched + 1
+				
 				-- get the file timestamp
 				tell application "System Events"
 					set theDate to modification date of file thePath
@@ -61,6 +64,9 @@ tell application id "com.devon-technologies.thinkpro2"
 			end repeat
 		end repeat
 		hide progress indicator
+		
+		set theMessage to "Found " & (matched as string) & " dates in " & (number_of_steps as string) & " records."
+		display alert "DEVONthink Pro" message theMessage as informational
 		
 	on error error_message number error_number
 		hide progress indicator
