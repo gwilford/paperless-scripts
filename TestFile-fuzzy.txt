@@ -16,7 +16,7 @@ xxyy 1st Aug 2000		|2000-08-01|
 2 February 88 aabb		|1988-02-02|
 May 2012 123 #Just the month	|2012-05|
 June 24, 2003 			|2003-06-24|
-page 123 Feb 2000		|2000-02|
+page 123 Feb 2000		|2000-02-23|
 23 Feb 200 1			|no date|
 23 Feb 20010			|2001-02-23|
 December 123, 2010		|no date|
