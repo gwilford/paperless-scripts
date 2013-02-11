@@ -24,13 +24,14 @@ my $past = 30*$year;
 my $testfail = 0;
 
 sub usage {
-	die "Usage: $0 [ -t ] [ -c ] [ -L logfile ] [ filepath ]\n" .
+	die "Usage: $0 [ -t ] [ -c ] [ -f ][ -L logfile ] [ filepath ]\n" .
 	    "       -t: test mode\n" .
+	    "       -f: use fuzzy matching to compensate for OCR deficiencies\n" .
 	    "       -c: CR instead of LF at end of line\n";
 }
 
-our($opt_t, $opt_L, $opt_c);
-getopts('tcL:') || usage();
+our($opt_t, $opt_L, $opt_c, $opt_f);
+getopts('tcfL:') || usage();
 
 my $filepath = $ARGV[0];
 
@@ -105,26 +106,58 @@ sub process {
 
 	# take a line at a time
 	while (my $text = <STDIN>) {
+		my ($sep, $day, $suffix, $mstr, $mig, $yr, $look_behind, $look_ahead, $pattern);
 		printlog($text);
 
-		# separators can be '-|/|.' or whitespace 
-		my $sep = '-|\/|\.|\s+';
-		# day can be:
-		# - single digit with or without leading zero
-		# - double digit
-		# - suffixed (eg 1st, 15th, 22nd)
-		# - missing
-		my $day = '0?[1-9]|[12][0-9]|3[01]';
-		my $suffix = 'st|nd|rd|th';
-		# month can be full or short name
-		my $mstr = 'jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may' .
-			   '|june?|july?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?' .
-			   '|nov(?:ember)?|dec(?:ember)?';
-		# ...or 1 or 2 digits 
-		my $mdig = '1[012]|0?[1-9]';
-		# year can be 2 or 4 digits
-		my $yr = '(19|20)?\d{2}?';
-	
+		# fuzzy or strict?
+		if ($opt_f) {
+			# !! fuzzy matching !!
+			
+			# separators can be '-|/|.' or whitespace 
+			$sep = '-|\/|\.|\s+';
+			# day can be:
+			# - single digit with or without leading zero
+			# - double digit
+			# - suffixed (eg 1st, 15th, 22nd)
+			# - missing
+			$day = '0?[1-9]|[12][0-9]|3[01]';
+			$suffix = '\d{2}';
+			# month can be full or short name
+			$mstr = '(?:jan|feb|mar|apr|may' .
+				'|jun|jul|aug|sep|oct' .
+				'|nov|dec)\d*';
+			# ...or 1 or 2 digits 
+			$mdig = '1[012]|0?[1-9]';
+			# year can be 2 or 4 digits
+			$yr = '(19|20)?\d{2}?';
+			
+			$look_behind = '';
+			$look_ahead = '';
+		} else {
+			# !! strict matching !!
+			
+			# separators can be '-|/|.' or whitespace 
+			$sep = '-|\/|\.|\s+';
+			# day can be:
+			# - single digit with or without leading zero
+			# - double digit
+			# - suffixed (eg 1st, 15th, 22nd)
+			# - missing
+			$day = '0?[1-9]|[12][0-9]|3[01]';
+			$suffix = 'st|nd|rd|th';
+			# month can be full or short name
+			$mstr = 'jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may' .
+				'|june?|july?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?' .
+				'|nov(?:ember)?|dec(?:ember)?';
+			# ...or 1 or 2 digits 
+			$mdig = '1[012]|0?[1-9]';
+			# year can be 2 or 4 digits
+			$yr = '(19|20)?\d{2}?';
+			
+			$look_behind = '(?<![\w\/£-])';
+			$look_ahead = '(?![\w\/%-])';
+		}
+		
 		# Build up a single REGEX pattern which can 
 		# be matched in a while() loop using /g
 		# to save position and match again further
@@ -134,7 +167,7 @@ sub process {
 
 		# (day or mdig cannot be prefixed by digits)
 		# look-behind and don't match a specific list of chars
-		my $pattern = '(?<![\w\/£-])';
+		$pattern = $look_behind;
 		# optionally match ($1 = D|DD) and ($2 = day/month separator)
 		$pattern .= "(?:" .
 				"($day)(?:$suffix)?($sep)" .
@@ -155,7 +188,7 @@ sub process {
 				"($day)(?:$suffix)?,(?:$sep)" .
 			    ")?($yr)";
 		# look-ahead and don't match a specifc list of chars
-		$pattern .= '(?![\w\/%-])';
+		$pattern .= $look_ahead;
 
 		# cycle through matches on current line
 		while ($text =~ /$pattern/ig || $opt_t) {
