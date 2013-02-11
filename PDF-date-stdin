@@ -54,7 +54,7 @@ sub testmatch {
 	if ($text =~ /\|([^|]+)\|/) {
 		my $expected = $1;
 		if ($match eq $expected) {
-			print "PASS $match: \'$text\'\n";
+			#print "PASS $match: \'$text\'\n";
 		} else {
 			print "FAIL $match: \'$text\'\n";
 			$testfail++;
@@ -106,58 +106,51 @@ sub process {
 
 	# take a line at a time
 	while (my $text = <STDIN>) {
-		my ($sep, $day, $suffix, $mstr, $mig, $yr, $look_behind, $look_ahead, $pattern);
+		my ($sep, $day, $suffix, $mstr, $mdig, $yr, 
+		    $look_behind, $look_ahead, $pattern);
 		printlog($text);
 
 		# fuzzy or strict?
-		if ($opt_f) {
-			# !! fuzzy matching !!
-			
-			# separators can be '-|/|.' or whitespace 
-			$sep = '-|\/|\.|\s+';
-			# day can be:
-			# - single digit with or without leading zero
-			# - double digit
-			# - suffixed (eg 1st, 15th, 22nd)
-			# - missing
-			$day = '0?[1-9]|[12][0-9]|3[01]';
-			$suffix = '\d{2}';
-			# month can be full or short name
-			$mstr = '(?:jan|feb|mar|apr|may' .
-				'|jun|jul|aug|sep|oct' .
-				'|nov|dec)\d*';
-			# ...or 1 or 2 digits 
-			$mdig = '1[012]|0?[1-9]';
-			# year can be 2 or 4 digits
-			$yr = '(19|20)?\d{2}?';
-			
-			$look_behind = '';
-			$look_ahead = '';
-		} else {
+		if (!$opt_f) {
 			# !! strict matching !!
 			
 			# separators can be '-|/|.' or whitespace 
 			$sep = '-|\/|\.|\s+';
-			# day can be:
-			# - single digit with or without leading zero
-			# - double digit
-			# - suffixed (eg 1st, 15th, 22nd)
-			# - missing
-			$day = '0?[1-9]|[12][0-9]|3[01]';
+			# day can be suffixed (eg 1st, 15th, 22nd)
 			$suffix = 'st|nd|rd|th';
 			# month can be full or short name
 			$mstr = 'jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may' .
 				'|june?|july?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?' .
 				'|nov(?:ember)?|dec(?:ember)?';
-			# ...or 1 or 2 digits 
-			$mdig = '1[012]|0?[1-9]';
-			# year can be 2 or 4 digits
-			$yr = '(19|20)?\d{2}?';
 			
 			$look_behind = '(?<![\w\/£-])';
 			$look_ahead = '(?![\w\/%-])';
+		} else {
+			# !! fuzzy matching !!
+			
+			# separators can be '-|/|.' with leading or trailing whitespace 
+			$sep = '\s*[-\/\.\s]\s*';
+			# day can be suffixed (eg 1st, 15th, 22nd)
+			$suffix = '[a-z]{2}';
+			# month can be full or short name
+			$mstr = '(?:jan|feb|mar|apr|may' .
+				'|jun|jul|aug|sep|oct' .
+				'|nov|dec)[a-z]*';
+			
+			$look_behind = '';
+			$look_ahead = '';
 		}
 		
+		# day can be:
+		# - single digit with or without leading zero
+		# - double digit
+		$day = '0?[1-9]|[12][0-9]|3[01]';
+
+		# month can be 1 or 2 digits
+		$mdig = '1[012]|0?[1-9]';
+		# year can be 2 or 4 digits
+		$yr = '(19|20)?\d{2}?';
+
 		# Build up a single REGEX pattern which can 
 		# be matched in a while() loop using /g
 		# to save position and match again further
