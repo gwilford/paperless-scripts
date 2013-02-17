@@ -22,6 +22,7 @@ my $year = 52*7*24*3600;
 my $future = 30*24*3600;
 my $past = 30*$year;
 my $testfail = 0;
+my $line = 0;
 
 sub usage {
 	die "Usage: $0 [ -t ] [ -c ] [ -f ][ -L logfile ] [ filepath ]\n" .
@@ -49,18 +50,16 @@ printlog("\n");
 close LOG if ($opt_L);
 
 sub testmatch {
-	my ($text, $match) = @_;
+	my ($text, $match, $found) = @_;
 	chomp($text);
 	if ($text =~ /\|([^|]+)\|/) {
 		my $expected = $1;
-		if ($match eq $expected) {
-			#print "PASS $match: \'$text\'\n";
-		} else {
-			print "FAIL $match: \'$text\'\n";
+		if ($match ne $expected) {
+			printf "%2d: FAIL %s(%s): '%s'\n", $line, $match, $found, $text;
 			$testfail++;
 		}
 	} else {
-		print "BAD  no expected result found: $text\n";
+		printf "%2d:      no expected match found: %s\n", $line, $text;
 	}
 }
 
@@ -74,6 +73,14 @@ sub dform {
 	my ($day, $mstr, $mdig, $altday, $yr) = @_;
 	my ($mon, $epoch);
 	
+	# clean out any matched whitespace
+	if ($opt_f) {
+		$day =~ s/\s//g if ($day);
+		$mdig =~ s/\s//g if ($mdig);
+		$altday =~ s/\s//g if ($altday);
+		$yr =~ s/\s//g if ($yr);
+	}
+
 	# set to 1st of month if no day in date
 	if ($altday) {
 		$day = $altday;
@@ -106,6 +113,7 @@ sub process {
 
 	# take a line at a time
 	while (my $text = <STDIN>) {
+		$line++;
 		my ($sep, $day, $suffix, $mstr, $mdig, $yr, 
 		    $look_behind, $look_ahead, $pattern);
 		printlog($text);
@@ -122,35 +130,43 @@ sub process {
 			$mstr = 'jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may' .
 				'|june?|july?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?' .
 				'|nov(?:ember)?|dec(?:ember)?';
+			# day can be:
+			# - single digit with or without leading zero
+			# - double digit
+			$day = '0?[1-9]|[12][0-9]|3[01]';
+
+			# month can be 1 or 2 digits
+			$mdig = '1[012]|0?[1-9]';
+			# year can be 2 or 4 digits
+			$yr = '(19|20)?\d{2}';
 			
 			$look_behind = '(?<![\w\/£-])';
 			$look_ahead = '(?![\w\/%-])';
 		} else {
 			# !! fuzzy matching !!
 			
-			# separators can be '-|/|.' with leading or trailing whitespace 
-			$sep = '\s*[-\/\.\s]\s*';
+			# separators can be '-|/|.' or whitespace 
+			$sep = '-|\/|\.|\s+';
 			# day can be suffixed (eg 1st, 15th, 22nd)
 			$suffix = '[a-z]{2}';
 			# month can be full or short name
 			$mstr = '(?:jan|feb|mar|apr|may' .
 				'|jun|jul|aug|sep|oct' .
 				'|nov|dec)[a-z]*';
+			# day can be:
+			# - single digit with or without leading zero
+			# - double digit
+			$day = '\s?(?:0?\s?[1-9]|[12]\s?[0-9]|3\s?[01])\s?';
+	
+			# month can be 1 or 2 digits
+			$mdig = '\s?(?:1\s?[012]|0?\s?[1-9])\s?';
+			# year can be 2 or 4 digits
+			$yr = '\s?(?:(1\s?9|2\s?0)?\s?\d\s?\d)\s?';
 			
 			$look_behind = '';
 			$look_ahead = '';
 		}
 		
-		# day can be:
-		# - single digit with or without leading zero
-		# - double digit
-		$day = '0?[1-9]|[12][0-9]|3[01]';
-
-		# month can be 1 or 2 digits
-		$mdig = '1[012]|0?[1-9]';
-		# year can be 2 or 4 digits
-		$yr = '(19|20)?\d{2}?';
-
 		# Build up a single REGEX pattern which can 
 		# be matched in a while() loop using /g
 		# to save position and match again further
@@ -190,7 +206,7 @@ sub process {
 				# test mode and nothing matched or
 				# something matched but failed range checking,
 				# forcing us back around the loop
-				testmatch($text, "no date");
+				testmatch($text, "no date", '');
 				last;
 			}
 
@@ -214,8 +230,10 @@ sub process {
 			printlog("** title = $name\n");
 
 			if ($opt_t) {
+				# make sure we aren't matching the |expect| string
+				next if ($` =~ /\|/);
 				# test mode and we have a match
-				testmatch($text, $name);
+				testmatch($text, $name, $&);
 				last;
 			}
 			return $name;
