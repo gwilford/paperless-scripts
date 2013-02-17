@@ -146,7 +146,7 @@ sub process {
 			# !! fuzzy matching !!
 			
 			# separators can be '-|/|.' or whitespace 
-			$sep = '-|\/|\.|\s+';
+			$sep = '\s*[-|\/|\.|\s]\s*';
 			# day can be suffixed (eg 1st, 15th, 22nd)
 			$suffix = '[a-z]{2}';
 			# month can be full or short name
@@ -156,12 +156,12 @@ sub process {
 			# day can be:
 			# - single digit with or without leading zero
 			# - double digit
-			$day = '\s?(?:0?\s?[1-9]|[12]\s?[0-9]|3\s?[01])\s?';
+			$day = '(?:0?\s?[1-9]|[12]\s?[0-9]|3\s?[01])';
 	
 			# month can be 1 or 2 digits
-			$mdig = '\s?(?:1\s?[012]|0?\s?[1-9])\s?';
+			$mdig = '(?:1\s?[012]|0?\s?[1-9])';
 			# year can be 2 or 4 digits
-			$yr = '\s?(?:(1\s?9|2\s?0)?\s?\d\s?\d)\s?';
+			$yr = '(?:(1\s?9|2\s?0)?\s?\d\s?\d)';
 			
 			$look_behind = '';
 			$look_ahead = '';
