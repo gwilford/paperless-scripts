@@ -20,7 +20,7 @@ my %monthy = ( jan => 0, feb => 1, mar => 2, apr => 3, may => 4, jun => 5, jul =
 # Range of dates that are deemed allowable ($past > date > $future)
 my $year = 52*7*24*3600;
 my $future = 30*24*3600;
-my $past = 30*$year;
+my $past = 50*$year;
 my $testfail = 0;
 my $line = 0;
 
