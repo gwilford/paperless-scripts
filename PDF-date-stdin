@@ -59,7 +59,7 @@ sub testmatch {
 			$testfail++;
 		}
 	} else {
-		printf "%2d:      no expected match found: %s\n", $line, $text;
+		printf "%2d:      no |expected match| found: %s\n", $line, $text;
 	}
 }
 
