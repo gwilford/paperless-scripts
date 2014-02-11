@@ -122,8 +122,10 @@ sub process {
 		if (!$opt_f) {
 			# !! strict matching !!
 			
-			# separators can be '-|/|.' or whitespace 
-			$sep = '-|\/|\.|\s+';
+			# separators can be '-|/|.|^' or whitespace
+			# also match zero-width separators if look ahead/behind contains
+			# 3 char month, i.e. match 15JAN2013
+			$sep = '-|\/|\.|\s+|\^|(?=[a-z]{3})|(?<=[a-z]{3})';
 			# day can be suffixed (eg 1st, 15th, 22nd)
 			$suffix = 'st|nd|rd|th';
 			# month can be full or short name
