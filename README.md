@@ -22,9 +22,9 @@ To test the date matching algorithm:<br>
 To change the acceptable date range (from 30yrs ago to 30 days in the future), 
 edit PDF-date-stdin and adjust $future or $past
 
-For use with DEVONthink Pro:
-- Copy the perl script, PDF-date-stdin to ~/Library/Application Support/DEVONthink Pro 2/ <code>$ cp PDF-date-stdin ~/Library/Application\ Support/DEVONthink\ Pro\ 2/</code>
-- Copy the AppleScript, 'Set Creation Date from Contents.scpt' to somewhere below the DTP scripts folder, ~/Library/Application Support/DEVONthink Pro 2/Scripts/ <code>$ cp Set\ Creation\ Date\ from\ Contents.scpt ~/Library/Application\ Support/DEVONthink\ Pro\ 2/Scripts/Rename/</code>
+For use with DEVONthink Pro / Pro Office:
+- Copy the perl script, PDF-date-stdin to ~/Library/Application Support/DEVONthink Pro 2/<br><code>$ cp PDF-date-stdin ~/Library/Application\ Support/DEVONthink\ Pro\ 2/</code>
+- Copy the AppleScript, 'Set Creation Date from Contents.scpt' to somewhere below the DTP scripts folder, ~/Library/Application Support/DEVONthink Pro 2/Scripts/<br><code>$ cp Set\ Creation\ Date\ from\ Contents.scpt ~/Library/Application\ Support/DEVONthink\ Pro\ 2/Scripts/Rename/</code>
 - Refresh the DTP scripts menu or restart DTP
 
 You'll need to edit the AppleScript to enable logging, to change the amount of text sent for parsing or the location
